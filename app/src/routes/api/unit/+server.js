@@ -1,11 +1,12 @@
 import { get, json, run } from '$lib/server/db.js';
 import { verifyUser } from '$lib/server/pin.js';
 import { validateForUnitId, gateMessage } from '$lib/server/gate.js';
+import { normalizeLineBreaks } from '$lib/server/ai-client.js';
 
 export async function POST({ request }) {
 	const body = await request.json();
 	const unitId = String(body.unit_id ?? '').trim();
-	const translationText = String(body.translation_text ?? '');
+	let translationText = String(body.translation_text ?? '');
 	const nickname = String(body.nickname ?? '').trim().slice(0, 24);
 	const pin = String(body.pin ?? '').trim();
 
@@ -18,6 +19,8 @@ export async function POST({ request }) {
 	const expectedRevision = body.expected_revision;
 	if (expectedRevision !== undefined && !Number.isInteger(expectedRevision)) return json({ error: 'invalid revision' }, { status: 400 });
 
+	const source = get('SELECT original_text FROM translation_units WHERE unit_id = $id', { $id: unitId });
+	if (source) translationText = normalizeLineBreaks(source.original_text ?? '', translationText);
 	const gate = validateForUnitId(unitId, translationText);
 	if (gate && !gate.ok) return json({ error: gateMessage(gate), gate }, { status: 422 });
 
@@ -40,5 +43,5 @@ export async function POST({ request }) {
 		return json({ error: exists ? 'Another worker changed this item. Reopen it to see the latest content.' : 'unit not found' }, { status: exists ? 409 : 404 });
 	}
 	run("UPDATE users SET last_seen_at = datetime('now') WHERE nickname = $nickname", { $nickname: nickname });
-	return json({ ok: true, status, translator_name: translationText.trim() ? nickname : '', revision: get('SELECT revision FROM translation_units WHERE unit_id = $id', { $id: unitId }).revision });
+	return json({ ok: true, status, translation_text: translationText, translator_name: translationText.trim() ? nickname : '', revision: get('SELECT revision FROM translation_units WHERE unit_id = $id', { $id: unitId }).revision });
 }

@@ -46,7 +46,8 @@ async function endpoint(route) {
   .replace("'$lib/server/db.js'", JSON.stringify(dbUrl))
   .replace("'$lib/server/recent-work.js'", JSON.stringify(recentWorkUrl))
   .replace("'$lib/server/gate.js'", JSON.stringify(gateUrl))
-  .replace("'$lib/server/pin.js'", JSON.stringify(pinUrl));
+  .replace("'$lib/server/pin.js'", JSON.stringify(pinUrl))
+  .replace("'$lib/server/ai-client.js'", JSON.stringify(new URL('../src/lib/server/ai-client.js', import.meta.url).href));
  return await import(dataUrl(source));
 }
 const recent = (await endpoint('admin/recent')).POST;
@@ -167,4 +168,25 @@ test('short and long comparisons preserve exact text including Unicode and line 
   assert.equal(diff.newSegments.map((part) => part.text).join(''), after);
   for (const segment of [...diff.oldSegments, ...diff.newSegments]) assert.equal(typeof segment.text, 'string');
  }
+});
+
+test('saving converts real line breaks to match the source', async () => {
+ db.prepare("INSERT INTO translation_units(unit_id, original_text) VALUES ('adv-break', ?)").run('一行目\\n二行目');
+ const saved = await post(save, { unit_id: 'adv-break', translation_text: 'line one\r\nline two' });
+ assert.equal(saved.translation_text, 'line one\\nline two');
+ assert.equal(db.prepare("SELECT translation_text FROM translation_units WHERE unit_id = 'adv-break'").get().translation_text, 'line one\\nline two');
+
+ db.prepare("INSERT INTO translation_units(unit_id, original_text) VALUES ('adv-literal', ?)").run('一行目\\n二行目');
+ const literal = await post(save, { unit_id: 'adv-literal', translation_text: 'line one\\nline two' });
+ assert.equal(literal.translation_text, 'line one\\nline two');
+});
+
+test('a real line break is still rejected when the source has no line break', async () => {
+ create('adv-single');
+ const response = await save({ request: new Request('http://localhost/test', {
+  method: 'POST', headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ nickname: 'alice', pin: '123456', unit_id: 'adv-single', translation_text: 'one\ntwo' })
+ }) });
+ assert.equal(response.status, 422);
+ assert.match((await response.json()).error, /real newline/);
 });

@@ -20,7 +20,7 @@ const authUrl = dataUrl(readFileSync(new URL('../src/lib/server/codex-auth.js', 
 const reviewsUrl = dataUrl(readFileSync(new URL('../src/lib/server/codex-reviews.js', import.meta.url), 'utf8').replace("'$lib/server/db.js'", JSON.stringify(dbUrl)));
 async function endpoint(name) {
 	return import(dataUrl(readFileSync(new URL(`../src/routes/api/${name}/+server.js`, import.meta.url), 'utf8')
-		.replace("'$lib/server/db.js'", JSON.stringify(dbUrl)).replace("'$lib/server/pin.js'", JSON.stringify(pinUrl)).replace("'$lib/server/admin.js'", JSON.stringify(adminUrl)).replace("'$lib/server/gate.js'", JSON.stringify(gateUrl)).replace("'$lib/server/ai-suggestions.js'", JSON.stringify(suggestionsUrl)).replace("'$lib/server/codex-auth.js'", JSON.stringify(authUrl)).replace("'$lib/server/codex-reviews.js'", JSON.stringify(reviewsUrl))));
+		.replace("'$lib/server/db.js'", JSON.stringify(dbUrl)).replace("'$lib/server/pin.js'", JSON.stringify(pinUrl)).replace("'$lib/server/admin.js'", JSON.stringify(adminUrl)).replace("'$lib/server/gate.js'", JSON.stringify(gateUrl)).replace("'$lib/server/ai-suggestions.js'", JSON.stringify(suggestionsUrl)).replace("'$lib/server/codex-auth.js'", JSON.stringify(authUrl)).replace("'$lib/server/codex-reviews.js'", JSON.stringify(reviewsUrl)).replace("'$lib/server/ai-client.js'", JSON.stringify(new URL('../src/lib/server/ai-client.js', import.meta.url).href))));
 }
 const submit = (await endpoint('ai-suggestions')).POST;
 const accept = (await endpoint('ai-suggestions/accept')).POST;

@@ -5,6 +5,7 @@ import { normalizeLineBreaks } from '../src/lib/server/ai-client.js';
 test('ADV source keeps literal \\n', () => {
 	assert.equal(normalizeLineBreaks('あ\\nい', 'a\nb'), 'a\\nb');
 	assert.equal(normalizeLineBreaks('あ\\nい', 'a\\nb'), 'a\\nb');
+	assert.equal(normalizeLineBreaks('あ\\nい', 'a\r\nb\nc'), 'a\\nb\\nc');
 });
 test('master source uses real breaks', () => {
 	assert.equal(normalizeLineBreaks('あ\r\nい', 'a\\nb'), 'a\r\nb');

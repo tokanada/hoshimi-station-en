@@ -851,7 +851,8 @@
 					pin: currentUser.pin,
 				}),
 			});
-			unit.translation_text = unit.draft;
+			unit.translation_text = data.translation_text ?? unit.draft;
+			unit.draft = unit.translation_text;
 			unit.status = data.status;
 			unit.revision = data.revision;
 			unit.translator_name = data.translator_name ?? currentUser.nickname;
